@@ -1,16 +1,13 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 enum Role {
   STUDENT
   TUTOR
   ADMIN
+}
+
+enum BookingStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
 }
 
 model User {
@@ -25,33 +22,51 @@ model User {
   tutorProfile TutorProfile?
   studentBookings Booking[] @relation("StudentBookings")
   tutorBookings   Booking[] @relation("TutorBookings")
+  reviews         Review[]
 }
 
 model TutorProfile {
-  id         String @id @default(uuid())
-  userId     String @unique
-  bio        String
-  hourlyRate Int
-  rating     Float @default(0)
+  id          String @id @default(uuid())
+  userId      String @unique
+  bio         String
+  hourlyRate  Int
+  rating      Float @default(0)
 
+  availability Availability[]
   user User @relation(fields: [userId], references: [id])
 }
 
+model Availability {
+  id        String @id @default(uuid())
+  tutorId   String
+  date      String
+  timeSlot  String
+
+  tutor TutorProfile @relation(fields: [tutorId], references: [id])
+}
+
 model Booking {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   studentId String
   tutorId   String
-  status    String   @default("CONFIRMED")
+  status    BookingStatus @default(CONFIRMED)
   createdAt DateTime @default(now())
 
   student User @relation("StudentBookings", fields: [studentId], references: [id])
   tutor   User @relation("TutorBookings", fields: [tutorId], references: [id])
+  review  Review?
 }
 
 model Review {
   id        String @id @default(uuid())
   rating    Int
   comment   String
-  tutorId   String
+  bookingId String @unique
   studentId String
+  tutorId   String
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
 }

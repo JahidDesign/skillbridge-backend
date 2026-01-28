@@ -4,20 +4,14 @@ import bcrypt from "bcrypt"
 const prisma = new PrismaClient()
 
 async function main() {
-  /*
-    Clean database.
-    Order matters because of foreign key relations.
-  */
+  // Clean database (order matters)
   await prisma.review.deleteMany()
   await prisma.booking.deleteMany()
   await prisma.availability.deleteMany()
   await prisma.tutorProfile.deleteMany()
   await prisma.user.deleteMany()
 
-  /*
-    Seed admin user.
-    Using upsert so it can be safely re-run.
-  */
+  // Create admin
   const adminPassword = await bcrypt.hash("Admin@123", 10)
 
   await prisma.user.upsert({
@@ -31,9 +25,7 @@ async function main() {
     }
   })
 
-  /*
-    Create student user.
-  */
+  // Create student
   const studentPassword = await bcrypt.hash("Student@123", 10)
 
   const student = await prisma.user.create({
@@ -45,9 +37,7 @@ async function main() {
     }
   })
 
-  /*
-    Create tutor user with profile.
-  */
+  // Create tutor with profile
   const tutorPassword = await bcrypt.hash("Tutor@123", 10)
 
   const tutor = await prisma.user.create({
@@ -68,9 +58,7 @@ async function main() {
     }
   })
 
-  /*
-    Add tutor availability.
-  */
+  // Tutor availability
   await prisma.availability.create({
     data: {
       tutorId: tutor.tutorProfile!.id,
@@ -79,9 +67,7 @@ async function main() {
     }
   })
 
-  /*
-    Create a completed booking.
-  */
+  // Booking
   const booking = await prisma.booking.create({
     data: {
       studentId: student.id,
@@ -90,16 +76,12 @@ async function main() {
     }
   })
 
-  /*
-    Create a review linked to the booking.
-  */
+  // Review (booking-based, schema-safe)
   await prisma.review.create({
     data: {
       rating: 5,
       comment: "Great tutor!",
-      bookingId: booking.id,
-      studentId: student.id,
-      tutorId: tutor.id
+      bookingId: booking.id
     }
   })
 

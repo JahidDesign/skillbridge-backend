@@ -1,15 +1,24 @@
 import { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
 
+/**
+ * Shape of JWT payload
+ */
 interface JwtPayload {
   id: string
   role: string
 }
 
+/**
+ * Extend Express Request to include user
+ */
 export interface AuthRequest extends Request {
   user?: JwtPayload
 }
 
+/**
+ * JWT authentication middleware
+ */
 export const protect = (
   req: AuthRequest,
   res: Response,
@@ -17,15 +26,22 @@ export const protect = (
 ) => {
   const authHeader = req.headers.authorization
 
-  if (!authHeader?.startsWith("Bearer ")) {
+  // Check header format: Bearer <token>
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized" })
   }
 
   try {
     const token = authHeader.split(" ")[1]
-    req.user = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as JwtPayload
+
+    req.user = decoded
     next()
-  } catch {
-    res.status(401).json({ message: "Invalid token" })
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid or expired token" })
   }
 }

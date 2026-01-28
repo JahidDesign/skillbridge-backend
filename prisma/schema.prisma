@@ -1,14 +1,79 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  TUTOR
+  ADMIN
+}
+
+enum BookingStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  isBanned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  tutorProfile TutorProfile?
+  studentBookings Booking[] @relation("StudentBookings")
+  tutorBookings   Booking[] @relation("TutorBookings")
+}
+
+model TutorProfile {
+  id         String @id @default(uuid())
+  userId     String @unique
+  bio        String
+  hourlyRate Int
+  rating     Float @default(0)
+
+  availability Availability[]
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Availability {
+  id       String @id @default(uuid())
+  tutorId  String
+  date     String
+  timeSlot String
+
+  tutor TutorProfile @relation(fields: [tutorId], references: [id])
+}
+
+model Booking {
+  id        String @id @default(uuid())
+  studentId String
+  tutorId   String
+  status    BookingStatus @default(CONFIRMED)
+  createdAt DateTime @default(now())
+
+  student User @relation("StudentBookings", fields: [studentId], references: [id])
+  tutor   User @relation("TutorBookings", fields: [tutorId], references: [id])
+  review  Review?
+}
+
+model Review {
+  id        String @id @default(uuid())
+  rating    Int
+  comment   String
+  bookingId String @unique
+  studentId String
+  tutorId   String
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
 }
